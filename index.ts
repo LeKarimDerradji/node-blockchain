@@ -1,26 +1,24 @@
 import * as crypto from 'crypto';
 
-// Transfer of funds between two wallets
 class Transaction {
   constructor(
-    public amount: number, 
-    public payer: string, // public key
-    public payee: string // public key
-  ) {}
+  public amount: number,
+  public payer: string,
+  public payee: string
+   ) {}
 
-  toString() {
-    return JSON.stringify(this);
-  }
-}
+   toString() {
+     return JSON.stringify(this);
+   }
+} 
 
-// Individual block on the chain
 class Block {
-
+   
   public nonce = Math.round(Math.random() * 999999999);
 
   constructor(
-    public prevHash: string, 
-    public transaction: Transaction, 
+    public prevHash: string,
+    public transaction: Transaction,
     public ts = Date.now()
   ) {}
 
@@ -32,8 +30,6 @@ class Block {
   }
 }
 
-
-// The blockchain
 class Chain {
   // Singleton instance
   public static instance = new Chain();
@@ -73,12 +69,12 @@ class Chain {
     }
   }
 
-  // Add a new block to the chain if valid signature & proof of work is complete
-  addBlock(transaction: Transaction, senderPublicKey: string, signature: Buffer) {
-    const verify = crypto.createVerify('SHA256');
-    verify.update(transaction.toString());
 
-    const isValid = verify.verify(senderPublicKey, signature);
+  addBlock(transaction: Transaction, senderPublicKey: string, signature: Buffer) {
+    const verifier = crypto.createVerify('SHA256');
+    verifier.update(transaction.toString());
+
+    const isValid = verifier.verify(senderPublicKey, signature);
 
     if (isValid) {
       const newBlock = new Block(this.lastBlock.hash, transaction);
@@ -89,7 +85,7 @@ class Chain {
 
 }
 
-// Wallet gives a user a public/private keypair
+
 class Wallet {
   public publicKey: string;
   public privateKey: string;
@@ -98,7 +94,7 @@ class Wallet {
     const keypair = crypto.generateKeyPairSync('rsa', {
       modulusLength: 2048,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem'},
     });
 
     this.privateKey = keypair.privateKey;
@@ -111,12 +107,10 @@ class Wallet {
     const sign = crypto.createSign('SHA256');
     sign.update(transaction.toString()).end();
 
-    const signature = sign.sign(this.privateKey); 
-    Chain.instance.addBlock(transaction, this.publicKey, signature);
+    const signature = sign.sign(this.privateKey)
+    Chain.instance.addBlock(transaction, this.privateKey, signature);
   }
 }
-
-// Example usage
 
 const satoshi = new Wallet();
 const bob = new Wallet();
@@ -127,5 +121,3 @@ bob.sendMoney(23, alice.publicKey);
 alice.sendMoney(5, bob.publicKey);
 
 console.log(Chain.instance)
-
-
